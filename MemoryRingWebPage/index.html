@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Memory Rings</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main id="controlView" class="control-view">
+    <section class="participation" aria-labelledby="promptTitle">
+      <p class="eyebrow">Memory Rings</p>
+      <h1 id="promptTitle">Is there a tree you still remember?</h1>
+      <p class="jp prompt-jp" lang="ja">今でも心に残っている木はありますか？</p>
+      <p class="intro">Share a memory of that tree. Let it become a ring.<span class="jp" lang="ja">その木との思い出を、一つの年輪に。</span></p>
+
+      <form id="memoryForm" novalidate>
+        <label class="sr-only" for="memoryInput">A memory of a tree / 木との思い出</label>
+        <textarea id="memoryInput" rows="7" maxlength="2000" placeholder="Write your memory here… / ここに思い出を書いてください" autocomplete="off"></textarea>
+        <div class="input-meta">
+          <span id="formMessage" role="status" aria-live="polite">Your words will grow into one or more rings.<span class="jp">言葉が一つ以上の年輪になります。</span></span>
+          <span><span id="charCount">0</span> / 2,000</span>
+        </div>
+        <button class="primary-button bilingual-button" type="submit"><span>Add your memory</span><span class="jp">思い出を加える</span></button>
+      </form>
+    </section>
+
+    <aside class="control-panel" aria-label="Administrator settings / 管理者設定">
+      <details class="admin-disclosure">
+        <summary class="admin-summary">
+          <span><span class="summary-title">Administrator controls</span><span class="jp">管理設定</span></span>
+          <span class="summary-state"><span class="when-closed">Open</span><span class="when-open">Close</span><span class="jp inline">開く・閉じる</span></span>
+        </summary>
+        <div class="admin-content">
+      <div class="panel-heading">
+        <div><p class="eyebrow">Admin</p><h2>Rings & projection<span class="jp">年輪と投影の設定</span></h2></div>
+        <button id="openProjection" class="secondary-button bilingual-button" type="button"><span>Open projection</span><span class="jp">投影画面を開く</span></button>
+      </div>
+
+      <section class="preview-section" aria-labelledby="previewTitle">
+        <div class="section-heading"><h3 id="previewTitle">Editor preview <span class="jp inline">編集プレビュー</span></h3><span id="previewHint">Click a ring to edit it.</span></div>
+        <div class="admin-preview">
+          <svg id="adminCanvas" viewBox="0 0 1200 800" role="img" aria-label="Editable ring preview"><g class="composition"></g></svg>
+        </div>
+      </section>
+
+      <section class="editor-section" aria-labelledby="styleTitle">
+        <div class="section-heading">
+          <div><h3 id="styleTitle">Type style <span class="jp inline">文字スタイル</span></h3><p id="editingLabel" class="editing-label">Editing defaults for new rings<span class="jp">新しい年輪の初期設定</span></p></div>
+          <button id="editDefaults" class="text-button" type="button">Edit defaults <span class="jp inline">初期設定</span></button>
+        </div>
+
+        <div id="styleControls" class="settings-grid">
+          <label class="field">Typeface <span class="jp inline">書体</span>
+            <select data-style-setting="fontStyle">
+              <option value="serif">Serif / セリフ</option>
+              <option value="sans">Sans-serif / サンセリフ</option>
+            </select>
+          </label>
+          <label class="field">Font size <span class="jp inline">文字サイズ</span> <output data-style-output="fontSize"></output>
+            <input type="range" min="14" max="40" step="1" data-style-setting="fontSize">
+          </label>
+          <label class="field">Weight <span class="jp inline">太さ</span> <output data-style-output="fontWeight"></output>
+            <input type="range" min="300" max="700" step="100" data-style-setting="fontWeight">
+          </label>
+          <label class="field">Letter spacing <span class="jp inline">字間</span> <output data-style-output="letterSpacing"></output>
+            <input type="range" min="-1" max="8" step="0.5" data-style-setting="letterSpacing">
+          </label>
+          <label class="field">Glyph width <span class="jp inline">文字の横幅</span> <output data-style-output="widthScale"></output>
+            <input type="range" min="75" max="130" step="1" data-style-setting="widthScale">
+          </label>
+        </div>
+        <div class="style-actions">
+          <label id="defaultGapField" class="field compact-range">Default ring gap <span class="jp inline">年輪の初期間隔</span> <output data-global-output="ringSpacing"></output>
+            <input type="range" min="18" max="100" step="1" data-global-setting="ringSpacing">
+          </label>
+          <button id="applyAllStyles" class="secondary-button bilingual-button" type="button"><span>Apply to all rings</span><span class="jp">すべての年輪に適用</span></button>
+        </div>
+      </section>
+
+      <section id="spacingEditor" class="spacing-editor" hidden aria-labelledby="spacingTitle">
+        <h3 id="spacingTitle">Ring spacing <span class="jp inline">年輪の間隔</span></h3>
+        <p id="spacingLabel" class="editing-label"></p>
+        <label class="field">Clear space between text bands <span class="jp inline">文字帯の間の余白</span> <output id="gapOutput"></output>
+          <input id="gapControl" type="range" min="18" max="100" step="1">
+        </label>
+      </section>
+
+      <section class="ring-list-section" aria-labelledby="ringListTitle">
+        <div class="section-heading"><h3 id="ringListTitle">Memory rings <span class="jp inline">記憶の年輪</span></h3><button id="archiveCurrent" class="secondary-button bilingual-button" type="button"><span>Archive &amp; Start New</span><span class="jp">保存して新しく始める</span></button></div>
+        <p class="group-help">Choose a group, then edit its memories or the gap between adjacent rings. New memories always join the current group.<span class="jp">グループを選んで編集します。新しい思い出は現在のグループに追加されます。</span></p>
+        <label class="field group-chooser">Current group / Archived groups <span class="jp inline">現在のグループ・保存済みのグループ</span>
+          <select id="groupSelector"></select>
+        </label>
+        <div class="archive-display-settings">
+          <label class="field">Archived groups on screen <span class="jp inline">表示する保存済みグループ数</span> <output id="archiveDisplayCount">2</output>
+            <input id="archiveDisplayLimit" type="range" min="0" max="4" step="1" value="2">
+          </label>
+          <div id="archiveGroupList" class="archive-group-list" aria-label="Archived groups / 保存済みのグループ"></div>
+        </div>
+        <div id="groupLayoutControls" class="archive-layout-controls">
+          <div class="group-mode-switch">
+            <button id="layoutMode" class="secondary-button bilingual-button" type="button"><span>Layout mode</span><span class="jp">配置モード</span></button>
+            <button id="interactMode" class="secondary-button bilingual-button" type="button"><span>Interaction mode</span><span class="jp">インタラクションモード</span></button>
+          </div>
+          <div class="group-mode-switch" aria-label="Group stacking order">
+            <button id="bringGroupForward" class="secondary-button bilingual-button" type="button"><span>Bring forward</span><span class="jp">前面へ</span></button>
+            <button id="sendGroupBackward" class="secondary-button bilingual-button" type="button"><span>Send backward</span><span class="jp">背面へ</span></button>
+          </div>
+          <div class="group-display-control">
+            <p class="group-display-label">Group display <span class="jp inline">グループの表示</span></p>
+            <div class="group-mode-switch" role="group" aria-label="Group display / グループの表示">
+              <button id="overlapDisplay" class="secondary-button bilingual-button" type="button" aria-pressed="false"><span>Overlap</span><span class="jp">重ね合わせ</span></button>
+              <button id="layeredDisplay" class="secondary-button bilingual-button" type="button" aria-pressed="true"><span>Layered</span><span class="jp">前後に重ねる</span></button>
+            </div>
+          </div>
+          <h3 id="groupLayoutLabel">Current group layout <span class="jp inline">現在のグループの配置</span></h3>
+          <p class="group-help">Drag the selected group in the preview, or enter its position and size. Coordinates follow the projection canvas.<span class="jp">プレビューでグループをドラッグするか、位置と大きさを入力してください。</span></p>
+          <div class="settings-grid group-layout-grid">
+            <label class="field">Horizontal position <span class="jp inline">水平位置</span><span class="group-layout-inputs"><input type="range" min="-600" max="600" step="1" data-group-layout="x"><input type="number" min="-600" max="600" step="1" data-group-number="x" aria-label="Horizontal position"></span></label>
+            <label class="field">Vertical position <span class="jp inline">垂直位置</span><span class="group-layout-inputs"><input type="range" min="-400" max="400" step="1" data-group-layout="y"><input type="number" min="-400" max="400" step="1" data-group-number="y" aria-label="Vertical position"></span></label>
+            <label class="field">Scale <span class="jp inline">拡大・縮小</span><span class="group-layout-inputs"><input type="range" min="10" max="180" step="1" data-group-layout="scale"><input type="number" min="10" max="180" step="1" data-group-number="scale" aria-label="Scale percentage"><span class="unit">%</span></span></label>
+          </div>
+          <div class="group-interaction-controls">
+            <p class="group-help">Contact deformation is off by default. Group display controls how crossing stories are shown. / 接触変形は初期状態でオフです。重なる文字の見え方は表示モードで選べます。</p>
+            <label class="switch-field"><input type="checkbox" data-global-setting="groupInteractionEnabled"><span>Group interaction<span class="jp">グループ間の反応</span></span></label>
+            <div class="settings-grid">
+              <label class="field">Influence distance <span class="jp inline">影響範囲</span> <output data-global-output="groupInfluenceDistance"></output><input type="range" min="20" max="240" step="5" data-global-setting="groupInfluenceDistance"></label>
+              <label class="field">Deformation strength <span class="jp inline">変形の強さ</span> <output data-global-output="groupDeformationStrength"></output><input type="range" min="0" max="30" step="1" data-global-setting="groupDeformationStrength"></label>
+            </div>
+          </div>
+        </div>
+        <div id="ringList" class="ring-list"></div>
+      </section>
+
+      <section class="global-section" aria-labelledby="globalTitle">
+        <h3 id="globalTitle">Projection <span class="jp inline">投影</span></h3>
+        <div class="settings-grid">
+          <label class="field">Reveal duration <span class="jp inline">表示時間</span> <output data-global-output="revealSpeed"></output>
+            <input type="range" min="4" max="30" step="1" data-global-setting="revealSpeed">
+          </label>
+          <label class="field">Composition size <span class="jp inline">全体サイズ</span> <output data-global-output="compositionScale"></output>
+            <input type="range" min="55" max="145" step="1" data-global-setting="compositionScale">
+          </label>
+          <label class="field">Horizontal position <span class="jp inline">水平位置</span> <output data-global-output="offsetX"></output>
+            <input type="range" min="-35" max="35" step="1" data-global-setting="offsetX">
+          </label>
+          <label class="field">Vertical position <span class="jp inline">垂直位置</span> <output data-global-output="offsetY"></output>
+            <input type="range" min="-35" max="35" step="1" data-global-setting="offsetY">
+          </label>
+          <label class="field">Maximum rings per group <span class="jp inline">グループ上限</span>
+            <select data-global-setting="ringsPerPage"><option value="6">6</option><option value="8">8</option><option value="10">10</option><option value="12">12</option></select>
+          </label>
+          <label class="switch-field"><input type="checkbox" data-global-setting="showSelectionProjection"><span>Show selection on projection<span class="jp">投影画面にも選択を表示</span></span></label>
+        </div>
+      </section>
+
+      <section class="motion-section" aria-labelledby="motionTitle">
+        <div class="section-heading">
+          <div><h3 id="motionTitle">Motion <span class="jp inline">動き</span></h3><p class="editing-label">Subtle contour movement and local touch interaction.<span class="jp">輪郭の微かな動きと局所的な操作。</span></p></div>
+        </div>
+        <div class="motion-master-switches">
+          <label class="motion-master">
+            <input type="checkbox" data-global-setting="pointerInteractionEnabled">
+            <span><strong>Mouse ripple &amp; local drag</strong><span class="jp">マウスの波紋・部分ドラッグ</span><span class="motion-status">Off by default / 初期状態はオフ</span></span>
+          </label>
+          <label class="motion-master">
+            <input type="checkbox" data-global-setting="autoMotionEnabled">
+            <span><strong>Automatic undulation</strong><span class="jp">自動の揺らぎ</span><span id="autoMotionStatus" class="motion-status"></span></span>
+          </label>
+          <label class="motion-master">
+            <input type="checkbox" data-global-setting="autoTextFlowEnabled">
+            <span><strong>Automatic text flow</strong><span class="jp">自動で文字を流す</span><span id="autoFlowStatus" class="motion-status"></span></span>
+          </label>
+        </div>
+        <div class="settings-grid motion-grid">
+          <label class="field">Undulation amplitude <span class="jp inline">揺らぎの幅</span> <output data-global-output="motionAmplitude"></output>
+            <input type="range" min="0" max="1.2" step="0.1" data-global-setting="motionAmplitude">
+          </label>
+          <label class="field">Undulation period <span class="jp inline">揺らぎの周期</span> <output data-global-output="motionPeriod"></output>
+            <input type="range" min="12" max="30" step="1" data-global-setting="motionPeriod">
+          </label>
+          <label class="field">Drag strength <span class="jp inline">ドラッグ強度</span> <output data-global-output="dragStrength"></output>
+            <input type="range" min="0.5" max="10" step="0.1" data-global-setting="dragStrength">
+          </label>
+          <label class="field">Hover ripple strength <span class="jp inline">ホバー波紋の強度</span> <output data-global-output="hoverStrength"></output>
+            <input type="range" min="0" max="3" step="0.1" data-global-setting="hoverStrength">
+          </label>
+          <label class="field">Influence range <span class="jp inline">影響範囲</span> <output data-global-output="dragRange"></output>
+            <input type="range" min="40" max="220" step="5" data-global-setting="dragRange">
+          </label>
+          <label class="field">Return time <span class="jp inline">戻る時間</span> <output data-global-output="returnTime"></output>
+            <input type="range" min="2" max="15" step="0.5" data-global-setting="returnTime">
+          </label>
+          <label class="field">Interaction cursor size <span class="jp inline">円形カーソルの大きさ</span> <output data-global-output="cursorSize"></output>
+            <input type="range" min="14" max="42" step="1" data-global-setting="cursorSize">
+          </label>
+        </div>
+
+        <div class="motion-actions">
+          <button id="pauseMotion" class="secondary-button bilingual-button" type="button"><span>Pause motion</span><span class="jp">動きを止める</span></button>
+          <button id="resetDeformation" class="secondary-button bilingual-button" type="button"><span>Reset deformation</span><span class="jp">変形をリセット</span></button>
+        </div>
+
+        <div class="global-flow-editor">
+          <div class="section-heading"><h3>All-ring text flow <span class="jp inline">すべての年輪の文字流動</span></h3><span>Global controls / 全体設定</span></div>
+          <div class="settings-grid">
+            <label class="field">Unified direction <span class="jp inline">統一方向</span>
+              <select data-global-setting="globalFlowDirection"><option value="clockwise">Clockwise / 時計回り</option><option value="counterclockwise">Counterclockwise / 反時計回り</option></select>
+            </label>
+            <label class="field">Unified speed <span class="jp inline">統一速度</span> <output data-global-output="globalFlowSpeed"></output>
+              <input type="range" min="0.1" max="2" step="0.1" data-global-setting="globalFlowSpeed">
+            </label>
+          </div>
+          <div class="global-flow-actions">
+            <button id="applyFlowAll" class="secondary-button bilingual-button" type="button"><span>Apply to all rings</span><span class="jp">すべての年輪に適用</span></button>
+            <button id="saveFlowDefault" class="secondary-button bilingual-button" type="button"><span>Use for new rings</span><span class="jp">新しい年輪の初期値にする</span></button>
+          </div>
+          <p id="flowDefaultStatus" class="admin-message"></p>
+        </div>
+
+        <div id="flowEditor" class="flow-editor">
+          <div class="section-heading"><h3>Selected-ring text flow <span class="jp inline">選択した年輪の文字流動</span></h3><span id="flowEditorLabel">Select one ring. / 年輪を一つ選択。</span></div>
+          <div id="flowEmpty" class="flow-empty">
+            <p>Select a memory ring to set it to still, clockwise, or counterclockwise movement.<span class="jp">年輪を選択して、静止・時計回り・反時計回りを設定します。</span></p>
+            <button id="chooseFlowRing" class="secondary-button bilingual-button" type="button"><span>Select a ring</span><span class="jp">年輪を選択</span></button>
+          </div>
+          <div id="flowControls" class="settings-grid" hidden>
+            <label class="field">Movement <span class="jp inline">動き方</span>
+              <select data-flow-setting="mode"><option value="still">Still / 静止</option><option value="clockwise">Clockwise / 時計回り</option><option value="counterclockwise">Counterclockwise / 反時計回り</option></select>
+            </label>
+            <label class="field">Speed <span class="jp inline">速度</span> <output data-flow-output="speed"></output>
+              <input type="range" min="0.1" max="2" step="0.1" data-flow-setting="speed">
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <div class="page-row" aria-label="Ring group navigation">
+        <button id="previousPage" class="icon-button" type="button" aria-label="Previous group">←</button>
+        <span id="pageStatus">Group 1 / 1</span>
+        <button id="nextPage" class="icon-button" type="button" aria-label="Next group">→</button>
+      </div>
+
+      <div class="actions" aria-label="Data management">
+        <button id="undoStory" class="secondary-button bilingual-button" type="button"><span>Undo last</span><span class="jp">直前を取消</span></button>
+        <button id="loadDemo" class="secondary-button bilingual-button" type="button"><span>Load examples</span><span class="jp">例を追加</span></button>
+        <button id="removeDemo" class="secondary-button bilingual-button" type="button"><span>Remove examples</span><span class="jp">例を削除</span></button>
+        <button id="exportData" class="secondary-button bilingual-button" type="button"><span>Export JSON</span><span class="jp">書き出す</span></button>
+        <button id="importData" class="secondary-button bilingual-button" type="button"><span>Import JSON</span><span class="jp">読み込む</span></button>
+        <button id="clearAll" class="danger-button bilingual-button" type="button"><span>Clear all</span><span class="jp">すべて削除</span></button>
+        <input id="importFile" class="sr-only" type="file" accept="application/json,.json">
+      </div>
+      <p id="adminMessage" class="admin-message" role="status" aria-live="polite"></p>
+        </div>
+      </details>
+    </aside>
+  </main>
+
+  <main id="projectionView" class="projection-view" aria-label="Memory Rings projection">
+    <svg id="ringsCanvas" viewBox="0 0 1200 800" role="img" aria-labelledby="projectionTitle projectionDesc" preserveAspectRatio="xMidYMid meet">
+      <title id="projectionTitle">Memory Rings</title><desc id="projectionDesc">Tree memories arranged along irregular concentric paths.</desc>
+      <g class="composition"></g>
+    </svg>
+  </main>
+
+  <script src="js/state.js" defer></script>
+  <script src="js/geometry.js" defer></script>
+  <script src="js/motion.js" defer></script>
+  <script src="js/rings.js" defer></script>
+  <script src="js/app.js" defer></script>
+</body>
+</html>

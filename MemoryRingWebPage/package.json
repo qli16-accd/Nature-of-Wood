@@ -1,0 +1,9 @@
+{
+  "name": "memory-rings",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "serve": "powershell -NoProfile -ExecutionPolicy Bypass -File ./serve.ps1",
+    "check": "node --check js/state.js && node --check js/geometry.js && node --check js/motion.js && node --check js/rings.js && node --check js/app.js"
+  }
+}

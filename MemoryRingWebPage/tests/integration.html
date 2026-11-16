@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>Memory Rings integration tests</title>
+  <style>
+    body { margin: 0; padding: 32px; font: 16px/1.6 system-ui, sans-serif; color: #172018; background: #eef0ea; }
+    body.pass { background: #dcebdd; }
+    body.fail { background: #f2d9d6; }
+    h1 { margin-top: 0; }
+    iframe { position: fixed; width: 320px; height: 240px; opacity: .001; pointer-events: none; border: 0; z-index: -1; }
+    li.pass::marker { color: #287237; }
+    li.fail { color: #9c251d; }
+  </style>
+</head>
+<body>
+  <h1 id="summary">浏览器集成测试运行中……</h1>
+  <ol id="results"></ol>
+  <script src="../js/state.js"></script>
+  <script src="../js/geometry.js"></script>
+  <script src="../js/motion.js"></script>
+  <script src="../js/rings.js"></script>
+  <script src="integration.js"></script>
+</body>
+</html>
