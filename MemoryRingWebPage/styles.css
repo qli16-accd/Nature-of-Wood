@@ -145,7 +145,7 @@ input[type="range"] { accent-color: #c5bbaa; }
 .motion-actions button { min-height: 58px; }
 .global-flow-editor, .flow-editor { margin-top: 24px; padding: 20px; background: #141512; border: 1px solid #343630; }
 .global-flow-editor .settings-grid, .flow-editor .settings-grid { margin-top: 18px; }
-.global-flow-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 18px; }
+.global-flow-actions { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; margin-top: 18px; max-width: 320px; }
 .global-flow-actions button { min-height: 58px; }
 .flow-empty { margin-top: 18px; padding-top: 16px; border-top: 1px solid #2e302c; }
 .flow-empty p { margin: 0 0 14px; color: #aaa69d; font-size: 12px; line-height: 1.6; }

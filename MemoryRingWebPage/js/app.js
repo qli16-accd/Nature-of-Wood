@@ -28,6 +28,20 @@
       'groupInteractionEnabled', 'groupInfluenceDistance', 'groupDeformationStrength', 'pointerInteractionEnabled'].includes(key)
       ? state.settings : selectedSettings();
   }
+  function prepareNewMemoryFlow() {
+    const settings = state.settings;
+    if (!(Number(settings.globalFlowSpeed) > 0)) settings.globalFlowSpeed = MemoryState.SETTINGS.globalFlowSpeed;
+    settings.newRingFlowEnabled = true;
+    settings.newRingFlowDirection = 'clockwise';
+    settings.newRingFlowSpeed = settings.globalFlowSpeed;
+    if (settings.autoTextFlowEnabled) return;
+    const flowNow = window.MemoryMotion ? MemoryMotion.clock(settings) : Date.now();
+    if (settings.textFlowPausedAt !== null) {
+      settings.textFlowPauseAccumulated += Math.max(0, flowNow - settings.textFlowPausedAt);
+    }
+    settings.textFlowPausedAt = null;
+    settings.autoTextFlowEnabled = true;
+  }
   function replaceSelectedStories(stories) {
     const group = selectedArchive();
     if (group) group.stories = stories;
@@ -210,10 +224,7 @@
       const key = output.dataset.flowOutput;
       output.value = flowStory ? formatSetting(key, flowStory.flow[key]) : '—';
     });
-    const defaultMode = selectedSettings().newRingFlowEnabled
-      ? (selectedSettings().newRingFlowDirection === 'counterclockwise' ? 'Counterclockwise' : 'Clockwise')
-      : 'Still';
-    document.querySelector('#flowDefaultStatus').textContent = `New rings: ${defaultMode}, ${selectedSettings().newRingFlowSpeed} char/s / 新しい年輪の初期値`;
+    document.querySelector('#flowDefaultStatus').textContent = `New memories in the current group: clockwise automatically, ${MemoryState.flowForNew(state.settings).speed} char/s / 現在のグループに加える思い出は自動で時計回りに流れます。`;
   }
 
   function selectedPair() {
@@ -693,6 +704,7 @@
         input.focus();
         return;
       }
+      prepareNewMemoryFlow();
       const story = {
         id: MemoryState.uid(), text: input.value, submittedAt: new Date().toISOString(), isDemo: false,
         style: MemoryState.cleanStyle(state.settings), gapBefore: state.settings.ringSpacing,
@@ -727,9 +739,10 @@
       const update = () => {
         const key = control.dataset.globalSetting;
         const target = settingTarget(key);
-        const value = control.type === 'checkbox'
+        let value = control.type === 'checkbox'
           ? control.checked
           : control.tagName === 'SELECT' ? control.value : Number(control.value);
+        if (key === 'globalFlowSpeed' && !(value > 0)) value = MemoryState.SETTINGS.globalFlowSpeed;
         if (key === 'autoTextFlowEnabled' && value !== target.autoTextFlowEnabled) {
           const flowNow = window.MemoryMotion ? MemoryMotion.clock(state.settings) : Date.now();
           if (value) {
@@ -742,6 +755,7 @@
           }
         }
         target[key] = value;
+        if (key === 'globalFlowSpeed' && target === state.settings) state.settings.newRingFlowSpeed = value;
         clampPage();
         render();
         delayedPersist('global-settings');
@@ -800,14 +814,6 @@
       });
       adminNotice('Global text-flow settings applied to all rings. / 全年輪に文字流動設定を適用しました。');
       persist('apply-flow-all');
-    });
-
-    document.querySelector('#saveFlowDefault').addEventListener('click', () => {
-      selectedSettings().newRingFlowEnabled = selectedSettings().autoTextFlowEnabled;
-      selectedSettings().newRingFlowDirection = selectedSettings().globalFlowDirection;
-      selectedSettings().newRingFlowSpeed = selectedSettings().globalFlowSpeed;
-      adminNotice('Text flow saved as the default for new rings. / 新しい年輪の初期値として保存しました。');
-      persist('flow-default');
     });
 
     document.querySelector('#chooseFlowRing').addEventListener('click', () => {
@@ -995,6 +1001,7 @@
       if (memoryEditor) return adminNotice('Save or cancel the open edit first. / 編集を先に保存またはキャンセルしてください。');
       state.selectedGroupId = state.currentGroupId;
       const existing = new Set(state.stories.filter((story) => story.isDemo).map((story) => story.text));
+      if (MemoryState.DEMO_TEXTS.some((text) => !existing.has(text))) prepareNewMemoryFlow();
       const added = [];
       MemoryState.DEMO_TEXTS.forEach((text) => {
         if (!existing.has(text)) {

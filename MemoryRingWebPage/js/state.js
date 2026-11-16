@@ -19,8 +19,8 @@
     autoMotionEnabled: true, motionAmplitude: 0.5, motionPeriod: 16,
     dragStrength: 5, dragRange: 110, returnTime: 8,
     hoverStrength: 1, cursorSize: 24,
-    autoTextFlowEnabled: false, globalFlowDirection: 'clockwise', globalFlowSpeed: 0.5,
-    newRingFlowEnabled: false, newRingFlowDirection: 'clockwise', newRingFlowSpeed: 0.5,
+    autoTextFlowEnabled: true, globalFlowDirection: 'clockwise', globalFlowSpeed: 0.5,
+    newRingFlowEnabled: true, newRingFlowDirection: 'clockwise', newRingFlowSpeed: 0.5,
     motionPausedAt: null, motionPauseAccumulated: 0,
     textFlowPausedAt: null, textFlowPauseAccumulated: 0,
     groupInteractionEnabled: false, groupInfluenceDistance: 90, groupDeformationStrength: 8,
@@ -77,8 +77,8 @@
       cursorSize: clamp(incoming.cursorSize, 14, 42, SETTINGS.cursorSize),
       autoTextFlowEnabled: incoming.autoTextFlowEnabled === undefined ? SETTINGS.autoTextFlowEnabled : Boolean(incoming.autoTextFlowEnabled),
       globalFlowDirection: incoming.globalFlowDirection === 'counterclockwise' ? 'counterclockwise' : 'clockwise',
-      globalFlowSpeed: clamp(incoming.globalFlowSpeed, 0.1, 2, SETTINGS.globalFlowSpeed),
-      newRingFlowEnabled: Boolean(incoming.newRingFlowEnabled),
+      globalFlowSpeed: Number(incoming.globalFlowSpeed) === 0 ? SETTINGS.globalFlowSpeed : clamp(incoming.globalFlowSpeed, 0.1, 2, SETTINGS.globalFlowSpeed),
+      newRingFlowEnabled: incoming.newRingFlowEnabled === undefined ? SETTINGS.newRingFlowEnabled : Boolean(incoming.newRingFlowEnabled),
       newRingFlowDirection: incoming.newRingFlowDirection === 'counterclockwise' ? 'counterclockwise' : 'clockwise',
       newRingFlowSpeed: clamp(incoming.newRingFlowSpeed, 0.1, 2, SETTINGS.newRingFlowSpeed),
       motionPausedAt: incoming.motionPausedAt === null || incoming.motionPausedAt === undefined
@@ -108,9 +108,9 @@
   function flowForNew(settings) {
     const source = settings || SETTINGS;
     return cleanFlow({
-      enabled: source.newRingFlowEnabled,
-      direction: source.newRingFlowDirection,
-      speed: source.newRingFlowSpeed
+      enabled: true,
+      direction: 'clockwise',
+      speed: Number(source.globalFlowSpeed) > 0 ? source.globalFlowSpeed : SETTINGS.globalFlowSpeed
     });
   }
 
@@ -173,7 +173,7 @@
     const stories = Array.isArray(source.stories)
       ? source.stories.map((story) => cleanStory(story, defaultStyle, settings.ringSpacing)).filter(Boolean)
       : [];
-    if (!source.settings || source.settings.autoTextFlowEnabled === undefined) {
+    if (source.settings && source.settings.autoTextFlowEnabled === undefined) {
       settings.autoTextFlowEnabled = stories.some((story) => story.flow.enabled);
     }
     const archives = Array.isArray(source.archives)

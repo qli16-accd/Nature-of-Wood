@@ -70,19 +70,21 @@
     const pathLength = Number(projectedText.dataset.pathLength);
     const renderedLength = Number(projectedText.dataset.renderedLength);
     check('Short memory repeats around the full measured path', Number(projectedText.dataset.repetitions) > 2 && projectedText.textContent.includes('Tree · Tree'));
-    check('Closed seam keeps a small natural gap', renderedLength < pathLength && renderedLength > pathLength * .82, `${renderedLength}/${pathLength}`);
+    check('New flowing ring uses a complete closed loop with separator glyphs', renderedLength === pathLength && projectedText.querySelectorAll('.flow-glyph').length > 3 && projectedText.textContent.includes('·'), `${renderedLength}/${pathLength}`);
     check('Repeated display never changes stored original text', saved.stories[0].text === 'Tree');
+    const initialNewPhase = Number(projectedText.dataset.flowPhase);
+    projection.defaultView.MemoryMotion.step(projection.defaultView.MemoryMotion.now() + 750);
+    check('First memory flows clockwise during reveal without an Apply to all action', saved.stories[0].flow.enabled && saved.stories[0].flow.direction === 'clockwise' && saved.stories[0].flow.speed === .5 && saved.settings.autoTextFlowEnabled && Number(projectedText.dataset.flowPhase) !== initialNewPhase);
     check('Subtle automatic motion uses conservative defaults', saved.settings.autoMotionEnabled && saved.settings.motionAmplitude === 0.5 && saved.settings.motionPeriod === 16);
     check('Expanded interaction defaults are available', saved.settings.dragStrength === 5 && saved.settings.returnTime === 8 && saved.settings.hoverStrength === 1 && saved.settings.cursorSize === 24);
     check('Expensive group and pointer interactions default off', !saved.settings.groupInteractionEnabled && !saved.settings.pointerInteractionEnabled);
     const movingPath = projection.querySelector('.ring-guide');
-    const stableTextNode = projectedText.querySelector('textPath');
     const initialMotionPath = movingPath.getAttribute('d');
     projection.defaultView.MemoryMotion.step(projection.defaultView.MemoryMotion.now() + 1000);
     const currentMovingPath = projection.querySelector('.ring-guide');
     const currentProjectedText = projection.querySelector('.ring-text');
-    check('Automatic motion updates the contour without rebuilding text', currentMovingPath.getAttribute('d') !== initialMotionPath && currentProjectedText.querySelector('textPath') === stableTextNode,
-      `${currentMovingPath === movingPath}/${currentProjectedText.querySelector('textPath') === stableTextNode}/${currentMovingPath.getAttribute('d') === initialMotionPath}`);
+    check('Automatic motion updates the contour without rebuilding text', currentMovingPath.getAttribute('d') !== initialMotionPath && currentProjectedText === projectedText,
+      `${currentMovingPath === movingPath}/${currentProjectedText === projectedText}/${currentMovingPath.getAttribute('d') === initialMotionPath}`);
     change(control.querySelector('[data-global-setting="autoMotionEnabled"]'), false);
     await sleep(170);
     const quietPath = projection.querySelector('.ring-guide');
@@ -93,10 +95,18 @@
     quietObserver.disconnect();
     change(control.querySelector('[data-global-setting="autoMotionEnabled"]'), true);
 
-    ['木', '木漏れ日の午後。', '⟦EN⟧ Tree · ⟦中文⟧ 树 · ⟦日本語⟧ 木'].forEach((text) => submit(control, text));
+    const firstRingId = saved.stories[0].id;
+    const phaseBeforeNextMemory = Number(projection.querySelector(`.flow-ring-text[data-story-id="${firstRingId}"]`).dataset.flowPhase);
+    submit(control, '木');
+    await sleep(120);
+    const phaseAfterNextMemory = Number(projection.querySelector(`.flow-ring-text[data-story-id="${firstRingId}"]`).dataset.flowPhase);
+    const preservedPhaseDistance = Math.abs(((phaseAfterNextMemory - phaseBeforeNextMemory + .5) % 1 + 1) % 1 - .5);
+    check('Submitting another memory keeps the first ring playback phase', preservedPhaseDistance < .08 && projection.querySelector(`.flow-ring-text[data-story-id="${firstRingId}"]`), `${phaseBeforeNextMemory}/${phaseAfterNextMemory}`);
+    ['木漏れ日の午後。', '⟦EN⟧ Tree · ⟦中文⟧ 树 · ⟦日本語⟧ 木'].forEach((text) => submit(control, text));
     await sleep(250);
     saved = MemoryState.load();
     check('Chinese, Japanese, English and mixed text persist unchanged', saved.stories.map((story) => story.text).join('|') === 'Tree|木|木漏れ日の午後。|⟦EN⟧ Tree · ⟦中文⟧ 树 · ⟦日本語⟧ 木');
+    check('Every consecutive submission starts its own clockwise flow', saved.stories.every((story) => story.flow.enabled && story.flow.direction === 'clockwise' && story.flow.speed === .5));
     check('Dual-window synchronization updates projection without refresh', projection.querySelectorAll('.ring-text').length === 4);
     check('Projection has no editing marks by default', projection.querySelectorAll('.ring-text.is-selected,.ring-guide.is-visible,.ring-number').length === 0);
 
@@ -116,6 +126,7 @@
     check('Unselected per-ring flow editor shows guidance instead of disabled controls', !control.querySelector('#flowEmpty').hidden && control.querySelector('#flowControls').hidden);
 
     const hoverClock = projection.defaultView.MemoryMotion.now();
+    projection.defaultView.MemoryMotion.receive({ kind: 'hover-move', hover: { active: true, pageIndex: 0, ringIndex: 0, angle: 0, target: 0, current: 0, releaseValue: 0, releaseClock: hoverClock } });
     projection.defaultView.MemoryMotion.step(hoverClock + 600);
     let baseDragPaths = Array.from(projection.querySelectorAll('.ring-guide')).map((path) => path.getAttribute('d'));
     const firstRingPath = projection.querySelector('.ring-guide');
@@ -186,6 +197,7 @@
     check('Selected ring is highlighted only in admin preview', control.querySelectorAll('#adminCanvas .ring-text.is-selected').length === 1 && projection.querySelectorAll('.ring-text.is-selected').length === 0);
     check('Selecting a ring reveals its text-flow controls', control.querySelector('#flowEmpty').hidden && !control.querySelector('#flowControls').hidden);
 
+    const otherFlowBefore = saved.stories.slice(1).map((story) => JSON.stringify(story.flow));
     change(control.querySelector('[data-global-setting="autoTextFlowEnabled"]'), true);
     change(control.querySelector('[data-flow-setting="mode"]'), 'clockwise');
     change(control.querySelector('[data-flow-setting="speed"]'), 1);
@@ -210,7 +222,7 @@
     change(control.querySelector('[data-style-setting="widthScale"]'), 112);
     await sleep(140);
 
-    check('Single-ring flow editing does not change other rings', saved.stories.slice(1).every((story) => !story.flow.enabled));
+    check('Single-ring flow editing does not change other rings', saved.stories.slice(1).every((story, index) => JSON.stringify(story.flow) === otherFlowBefore[index]));
 
     const contourBeforeFlowOff = projection.querySelector('.ring-guide').getAttribute('d');
     change(control.querySelector('[data-global-setting="autoTextFlowEnabled"]'), false);
@@ -243,11 +255,10 @@
     change(control.querySelector('[data-global-setting="globalFlowDirection"]'), 'counterclockwise');
     change(control.querySelector('[data-global-setting="globalFlowSpeed"]'), 0.7);
     control.querySelector('#applyFlowAll').click();
-    control.querySelector('#saveFlowDefault').click();
     await sleep(150);
     saved = MemoryState.load();
     check('Global text-flow controls apply direction and speed to every ring', saved.stories.every((story) => story.flow.enabled && story.flow.direction === 'counterclockwise' && story.flow.speed === 0.7));
-    check('Global flow can be saved as the new-ring default', saved.settings.newRingFlowEnabled && saved.settings.newRingFlowDirection === 'counterclockwise' && saved.settings.newRingFlowSpeed === 0.7);
+    check('New memories use the current speed while defaulting to clockwise', MemoryState.flowForNew(saved.settings).enabled && MemoryState.flowForNew(saved.settings).direction === 'clockwise' && MemoryState.flowForNew(saved.settings).speed === 0.7);
     const markerId = saved.stories[3].id;
     const markerProjection = projection.querySelector('.flow-ring-text[data-story-id="' + markerId + '"]');
     const markerAdmin = control.querySelector('#adminCanvas .flow-ring-text[data-story-id="' + markerId + '"]');
@@ -283,10 +294,12 @@
     await sleep(150);
     saved = MemoryState.load();
     check('Changing defaults does not overwrite existing rings', saved.settings.fontSize === 24 && saved.settings.widthScale === 108 && saved.stories[0].style.fontSize === 31 && saved.stories[1].style.fontSize === 22);
+    const previousFlowSettings = saved.stories.map((story) => JSON.stringify(story.flow));
     submit(control, 'New default style');
     await sleep(150);
     saved = MemoryState.load();
-    check('New rings inherit current style and text-flow defaults', saved.stories.at(-1).style.fontSize === 24 && saved.stories.at(-1).style.widthScale === 108 && saved.stories.at(-1).flow.enabled && saved.stories.at(-1).flow.direction === 'counterclockwise' && saved.stories.at(-1).flow.speed === 0.7);
+    check('New rings inherit current style and start clockwise without changing older rings', saved.stories.at(-1).style.fontSize === 24 && saved.stories.at(-1).style.widthScale === 108 && saved.stories.at(-1).flow.enabled && saved.stories.at(-1).flow.direction === 'clockwise' && saved.stories.at(-1).flow.speed === 0.7 && saved.stories.slice(0, -1).every((story) => story.flow.direction === 'counterclockwise'));
+    check('Adding a memory preserves each existing ring flow setting', saved.stories.slice(0, -1).every((story, index) => JSON.stringify(story.flow) === previousFlowSettings[index]));
 
     control.querySelector('#editDefaults').click();
     control.querySelector('#applyAllStyles').click();
@@ -347,7 +360,7 @@
     const legacyPayload = {
       version: 1,
       stories: [{ id: 'legacy-1', text: '旧データ old tree', submittedAt: '2025-01-02T03:04:05.000Z' }],
-      settings: { fontStyle: 'sans', fontSize: 25, fontWeight: 500, letterSpacing: 2, widthScale: 105, ringSpacing: 57, revealSpeed: 9, compositionScale: 100, offsetX: 0, offsetY: 0, ringsPerPage: 8 }
+      settings: { fontStyle: 'sans', fontSize: 25, fontWeight: 500, letterSpacing: 2, widthScale: 105, ringSpacing: 57, revealSpeed: 9, compositionScale: 100, offsetX: 0, offsetY: 0, ringsPerPage: 8, globalFlowSpeed: 0 }
     };
     const file = new File([JSON.stringify(legacyPayload)], 'legacy.json', { type: 'application/json' });
     const transfer = new DataTransfer();
@@ -358,6 +371,7 @@
     await waitFor(() => control.querySelector('#adminMessage').textContent.startsWith('1 memories'), 2500);
     const imported = MemoryState.load();
     check('Legacy JSON receives compatible style, gap, interaction and flow defaults', imported.version === 6 && imported.stories[0].style.fontSize === 25 && imported.stories[0].style.fontStyle === 'sans' && imported.stories[0].gapBefore === 32 && imported.stories[0].flow.enabled === false && imported.settings.autoMotionEnabled === true && imported.settings.autoTextFlowEnabled === false && !imported.settings.groupInteractionEnabled && !imported.settings.pointerInteractionEnabled && imported.archives.length === 0 && imported.selectedGroupId === imported.currentGroupId);
+    check('Zero unified speed falls back to a visible speed in saved data and controls', imported.settings.globalFlowSpeed === .5 && control.querySelector('[data-global-output="globalFlowSpeed"]').value === '0.5 char/s');
     const migratedV3 = MemoryState.normalise({ version: 3, settings: { autoMotionEnabled: false }, stories: [{ id: 'v3-flow', text: 'old flowing ring', flow: { enabled: true, direction: 'clockwise', speed: .5 } }] });
     check('Existing disabled undulation is preserved and old flowing rings keep playing', migratedV3.settings.autoMotionEnabled === false && migratedV3.settings.autoTextFlowEnabled === true);
 
@@ -382,6 +396,7 @@
     let longItems = MemoryRings.layoutPages(managedState.stories, managedState.settings).flatMap((page) => page.items).filter((item) => item.story.id === longId);
     check('Long English memory is submitted and stored without truncation', managedState.stories[0].text === longEnglish);
     check('Long memory continues across stable adjacent display rings', longItems.length > 1 && longItems.every((item, index) => item.ringId === `${longId}--${index}`), String(longItems.length));
+    check('Every visible segment of a long new memory starts with clockwise text flow', managedState.stories[0].flow.enabled && managedState.stories[0].flow.direction === 'clockwise' && Array.from(projection.querySelectorAll(`.ring-text[data-story-id="${longId}"]`)).every((node) => node.classList.contains('flow-ring-text')));
     check('Long-ring segments reconstruct the complete display text', longItems.map((item) => item.displayText).join('').replace(/\s+/g, ' ') === longEnglish.replace(/\s+/g, ' '));
     check('Projection receives all visible segments for its current group', projection.querySelectorAll(`.ring-text[data-story-id="${longId}"]`).length > 0);
 
@@ -515,6 +530,7 @@
     await sleep(180);
     grouped = MemoryState.load();
     check('Three consecutive archives retain three unique group IDs and every memory', grouped.archives.length === 3 && new Set(grouped.archives.map((group) => group.id)).size === 3 && grouped.archives[0].stories.length === firstOriginal.stories.length && grouped.archives[1].stories[0].text.includes('Group two') && grouped.archives[2].stories[0].text.includes('Group three'));
+    check('New groups after archiving also store automatic clockwise flow', grouped.archives[1].stories[0].flow.enabled && grouped.archives[1].stories[0].flow.direction === 'clockwise' && grouped.archives[2].stories[0].flow.enabled && grouped.archives[2].stories[0].flow.direction === 'clockwise');
     check('Projection defaults to the latest two archives and a new center', grouped.archiveDisplayIds.length === 2 && !grouped.archiveDisplayIds.includes(firstGroupId) && projection.querySelectorAll('.memory-group.is-archived').length === 2 && projection.querySelector('.memory-group.is-current'));
 
     const oldVisible = control.querySelector(`[data-archive-visible="${firstGroupId}"]`);
@@ -758,6 +774,21 @@
     change(control.querySelector('[data-global-setting="pointerInteractionEnabled"]'), true);
     await sleep(170);
     check('Three-group interaction mode can be re-enabled without rebuilding stories', projection.defaultView.MemoryMotion.groupContactSnapshot(projection.querySelector('#ringsCanvas')).length > 0 && projection.querySelectorAll('.memory-group').length === 3 && MemoryState.load().settings.pointerInteractionEnabled);
+    selectGroup(currentGroupId);
+    const manuallyStoppedId = MemoryState.load().stories[0].id;
+    control.querySelector(`.ring-row[data-story-id="${manuallyStoppedId}"]`).click();
+    change(control.querySelector('[data-flow-setting="mode"]'), 'still');
+    change(control.querySelector('[data-global-setting="globalFlowSpeed"]'), .8);
+    change(control.querySelector('[data-global-setting="globalFlowDirection"]'), 'counterclockwise');
+    await sleep(160);
+    submit(control, 'New tree after a manually stopped ring / 新しい木');
+    await sleep(170);
+    const finalFlowState = MemoryState.load();
+    const newFlowStory = finalFlowState.stories.at(-1);
+    const newFlowNode = projection.querySelector(`.flow-ring-text[data-story-id="${newFlowStory.id}"]`);
+    const newPhaseBefore = newFlowNode && newFlowNode.dataset.flowPhase;
+    projection.defaultView.MemoryMotion.step(projection.defaultView.MemoryMotion.now() + 700);
+    check('A later submission preserves a manually stopped ring and uses current speed clockwise', finalFlowState.stories[0].flow.enabled === false && newFlowStory.flow.enabled && newFlowStory.flow.direction === 'clockwise' && newFlowStory.flow.speed === .8 && newFlowNode && newFlowNode.dataset.flowPhase !== newPhaseBefore);
   } catch (error) {
     check('Integration test script completes without exception', false, error.stack || error.message);
   } finally {

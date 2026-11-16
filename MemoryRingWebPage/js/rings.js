@@ -379,7 +379,7 @@
         cycleWidth: prepared.cycleWidth,
         averageCharacterWidth: prepared.averageCharacterWidth,
         seamGap: prepared.seamGap || 0,
-        flowReadyAt: isNew ? (window.MemoryMotion ? MemoryMotion.now() : Date.now()) + group.settings.revealSpeed * 1000 : 0
+        flowReadyAt: 0
       }));
       });
     });

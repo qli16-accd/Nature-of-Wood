@@ -1,5 +1,9 @@
 # Memory Rings
 
+## New memory text flow
+
+Audience submissions now start clockwise text flow automatically, using the current group's **Unified speed** (0.5 char/s if a saved value is zero). Flow begins during the new ring's reveal animation. A long memory's continuation rings share its original story's flow settings. Adding another memory leaves existing rings' direction, speed, on/off choice, and loop phase intact. The **Apply to all rings** action remains available for deliberate changes to older rings; the former **Use for new rings** button is no longer needed. Archiving and starting a new group retains the same automatic behavior for new submissions.
+
 ## Layered group display
 
 The **Group display / グループの表示** buttons in **Memory rings** switch between **Overlap / 重ね合わせ** and **Layered / 前後に重ねる**. Overlap leaves every group's text visible where groups cross. Layered uses the saved front-to-back order and each group's static outer contour to cover text behind it. Existing data defaults to Layered. The mode is saved in local storage and JSON and is synchronized to the projection window. Switching modes only changes the visibility of cached black contour fills; it does not rebuild ring text or reset motion.
